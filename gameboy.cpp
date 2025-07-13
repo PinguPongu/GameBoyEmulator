@@ -15,19 +15,9 @@
 #define LOW12 0x0FFF // Lower 12 bits
 
 class CPU {
-public:
-
-    void play_game() {
-        filename = "Tetris_(USA)_(Rev-A).gb";
-        load_game();
-        while(1) {
-            uint8_t byte = cart[PC++];
-            select_op(byte);
-            print_registers();
-        }
-    }
-
 private:
+    Memory *memory;
+
     uint8_t A = 0x01; // Accumulator
     uint8_t B = 0x00;
     uint8_t C = 0x13;
@@ -43,40 +33,50 @@ private:
     std::string filename;
     std::vector<uint8_t> cart;
 
+    unsigned int cycles = 0;
+
     // 0x00
     void NOP() {
         PC++;
+        cycles++;
     }
 
     // 0x01
     void LD_BC_d16() {
         C = get_byte();
         B = get_byte();
+        cycles += 3;
     }
 
-    // 0x02 unfinished
+    // 0x02
     void LD_BC_A() {
-        // oof
+        uint16_t BC = get_register_pair(B, C);       
+        (*memory)[BC] = A;
+        cycles += 2;
     }
 
     // 0x03
     void INC_BC() {
         INC_reg_pair(B, C);
+        cycles += 2;
     }
 
     // 0x04 
     void INC_B() {
         INC_reg(B);
+        cycles++;
     }
 
     // 0x05
     void DEC_B() {
         DEC_reg(B);
+        cycles++;
     }
 
     // 0x06
     void LD_B_d8() {
         B = get_byte();
+        cycles += 2;
     }
 
     // 0x07
@@ -86,11 +86,17 @@ private:
         clear_flags();
         if (bit7)
             F |= FLAG_C;
+        cycles++;
     }
 
-    // 0x08 unfinished
+    // 0x08
     void LD_a16_SP() {
-        //oofff
+        uint8_t byte_lo = SP;
+        uint8_t byte_hi = SP >> 8;
+        uint16_t address = get_2_bytes();
+        (*memory)[address] = byte_lo;
+        (*memory)[address + 1] = byte_hi;
+        cycles += 5;
     }
 
     // 0x09
@@ -102,28 +108,92 @@ private:
         set_flag_n(0);
         HL += BC;
         store_register_pair(HL, H, L);
+        cycles += 2;
     }
 
-    // 0x0A // unfinished
+    // 0x0A
     void LD_A_BC() {
-
+        uint16_t BC = get_register_pair(B, C);
+        A = (*memory)[BC];
+        cycles += 2;
     }
 
     // 0x0B
     void DEC_BC() {
         DEC_reg_pair(B, C);
+        cycles += 2;
     }
 
     // 0x0C
     void INC_C() {
         INC_reg(C);
+        cycles++;
     }
 
     // 0x0D
     void DEC_C() {
         DEC_reg(C);
+        cycles++;
     }
 
+    // 0x0E
+    void LD_C_d8() {
+        C = get_byte();
+        cycles += 2;
+    }
+
+    // 0x10 unfinished
+    void STOP() {
+        // oof
+        cycles++;
+    }
+
+    // 0x11
+    void LD_DE_d16() {
+        E = get_byte();
+        D = get_byte();
+        cycles += 3;
+    }
+
+    // 0x12
+    void LD_DE_A() {
+        int16_t DE = get_register_pair(D, E);
+        (*memory)[DE] = A;
+        cycles += 2;
+    }
+
+    // 0x13
+    void INC_DE() {
+        INC_reg_pair(D, E);
+        cycles += 2;
+    }
+
+
+
+
+    void select_op(uint8_t byte) {
+        switch(byte) {
+            case 0x00: NOP();       break;
+            case 0x01: LD_BC_d16(); break;
+            case 0x02: LD_BC_A();   break;
+            case 0x03: INC_BC();    break;
+            case 0x04: INC_B();     break;
+            case 0x05: DEC_B();     break;
+            case 0x06: LD_B_d8();   break;
+            case 0x07: RLCA();      break;
+            case 0x08: LD_a16_SP(); break;
+            case 0x09: ADD_HL_BC(); break;
+            case 0x0A: LD_A_BC();   break;
+            case 0x0B: DEC_BC();    break;
+            case 0x0C: INC_C();     break;
+            case 0x0D: DEC_C();     break;
+            case 0x0E: LD_C_d8();   break;
+            case 0x10: STOP();      break;
+            case 0x11: LD_DE_d16(); break;
+            case 0x12: LD_DE_A();   break;
+            case 0x13: INC_DE();    break;
+        }
+    }
 
     // ---------
     // UTILITIES 
@@ -148,15 +218,15 @@ private:
     }
 
     void INC_reg_pair(uint8_t &reg_hi, uint8_t &reg_lo) {
-        uint16_t reg_comb = get_register_pair(reg_hi, reg_lo);
-        reg_comb++;
-        store_register_pair(reg_comb, reg_hi, reg_lo);
+        uint16_t reg_pair = get_register_pair(reg_hi, reg_lo);
+        reg_pair++;
+        store_register_pair(reg_pair, reg_hi, reg_lo);
     }
 
     void DEC_reg_pair(uint8_t &reg_hi, uint8_t &reg_lo) {
-        uint16_t reg_comb = get_register_pair(reg_hi, reg_lo);
-        reg_comb--;
-        store_register_pair(reg_comb, reg_hi, reg_lo);
+        uint16_t reg_pair = get_register_pair(reg_hi, reg_lo);
+        reg_pair--;
+        store_register_pair(reg_pair, reg_hi, reg_lo);
     }
 
     // -------------
@@ -258,34 +328,13 @@ private:
         return cart[PC++];
     }
 
-    uint16_t get_2_bytes(std::ifstream &file) {
+    uint16_t get_2_bytes() {
         uint8_t low, high;
         low = cart[PC++];
         high = cart[PC++];
 
         return static_cast<uint16_t>(low) | (static_cast<uint16_t>(high) << 8);
     }
-
-
-    void select_op(uint8_t byte) {
-        switch(byte) {
-            case 0x00: NOP();       break;
-            case 0x01: LD_BC_d16(); break;
-            case 0x02: LD_BC_A();   break;
-            case 0x03: INC_BC();    break;
-            case 0x04: INC_B();     break;
-            case 0x05: DEC_B();     break;
-            case 0x06: LD_B_d8();   break;
-            case 0x07: RLCA();      break;
-            case 0x08: LD_a16_SP(); break;
-            case 0x09: ADD_HL_BC(); break;
-            case 0x0A: LD_A_BC();   break;
-            case 0x0B: DEC_BC();    break;
-            case 0x0C: INC_C();     break;
-            case 0x0D: DEC_C();     break;
-        }
-    }
-
 
     void load_game() {
         std::ifstream rom(filename, std::ios::binary);
@@ -299,6 +348,9 @@ private:
         }
     }
 
+    // -----
+    // DEBUG
+    // -----
 
     void print_registers() {
         uint16_t AF = get_register_pair(A, F);
@@ -329,6 +381,23 @@ private:
         std::cout << "║ SP     ║ 0x" << std::setw(4) << std::setfill('0') << SP << " ║\n";
         std::cout << "║ PC     ║ 0x" << std::setw(4) << std::setfill('0') << PC << " ║\n";
         std::cout << "╚════════╩════════╝\n";
+    }
+
+    void reset_cycles() {
+        cycles = 0;
+    }
+
+public:
+    CPU(Memory* _memory) : memory(_memory) {}
+
+    void play_game() {
+        filename = "Tetris_(USA)_(Rev-A).gb";
+        load_game();
+        while(1) {
+            uint8_t byte = cart[PC++];
+            select_op(byte);
+            print_registers();
+        }
     }
 };
 
@@ -380,12 +449,12 @@ public:
 };
 
 int main() {
-    CPU cpu;
     // cpu.play_game();
-    Memory mem;
+    Memory *mem;
+    CPU cpu(mem);
 
-    mem[0x02] = 5;
+    (*mem)[0x02] = 5;
 
-    std::cout << static_cast<int>(mem[0x02]) << '\n';
+    std::cout << static_cast<int>((*mem)[0x02]) << '\n';
 
 }
