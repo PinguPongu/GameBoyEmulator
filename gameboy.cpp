@@ -10,9 +10,55 @@
 #define FLAG_N 0x40 // Subtraction Flag
 #define FLAG_H 0x20 // Half Carry flag
 #define FLAG_C 0x10 // Carry Flag
-
 #define LOW4 0x0F    // Lower 4 bits
 #define LOW12 0x0FFF // Lower 12 bits
+
+class Memory {
+public:
+    uint16_t address_space = 0xFFFF;
+    uint8_t ROM_bank_00[0x4000];
+    uint8_t ROM_bank_01_NN[0x4000];
+    uint8_t VRAM[0x2000];
+    uint8_t ERAM[0x2000];
+    uint8_t WRAM_1[0x1000];
+    uint8_t WRAM_2[0x1000];
+    uint8_t echo_RAM[0x1E00];
+    uint8_t OAM[0xA0];
+    uint8_t not_usable[0x5F];
+    uint8_t IO[0x80];
+    uint8_t HRAM[0x7F];
+    uint8_t interrupt;
+
+    uint8_t &operator[] (uint16_t address) {
+        if (address < 0x4000) {
+            return ROM_bank_00[address];
+        } else if (address < 0x8000) {
+            return ROM_bank_01_NN[address - 0x4000];
+        } else if (address < 0xA000) {
+            return VRAM[address - 0x8000];
+        } else if (address < 0xC000) {
+            return ERAM[address - 0xA000];
+        } else if (address < 0xD000) {
+            return WRAM_1[address - 0xC000];            
+        } else if (address < 0xE000) {
+            return WRAM_2[address - 0xD000];
+        } else if (address < 0xFE00) {
+            return echo_RAM[address - 0xE000];
+        } else if (address < 0xFEA0) {
+            return OAM[address - 0xFE00];
+        } else if (address < 0xFF00) {
+            return not_usable[address - 0xFEA0];
+        } else if (address < 0xFF80) {
+            return IO[address - 0xFF00];
+        } else if (address < 0xFFFF) {
+            return HRAM[address - 0xFF80];
+        } else if (address == 0xFFFF) {
+            return interrupt;
+        } 
+        // return exception
+        return interrupt;
+    }
+};
 
 class CPU {
 private:
@@ -34,6 +80,12 @@ private:
     std::vector<uint8_t> cart;
 
     unsigned int cycles = 0;
+
+    // NOTES
+    // d8 -> 8-bit immediate value (unsigned)
+    // s8 -> 8-bit immediate value (signed)
+    // d16 -> 16-bit immediate value (unsigned little endian)
+    // a16 -> 16-bit address
 
     // 0x00
     void NOP() {
@@ -84,8 +136,7 @@ private:
         uint8_t bit7 = (A >> 7) & 0x01;
         A = ((A << 1) | bit7) & 0xFF;
         clear_flags();
-        if (bit7)
-            F |= FLAG_C;
+        if (bit7) F |= FLAG_C;
         cycles++;
     }
 
@@ -101,8 +152,8 @@ private:
 
     // 0x09
     void ADD_HL_BC() {
-        uint16_t BC = get_register_pair(B, C);
         uint16_t HL = get_register_pair(H, L);
+        uint16_t BC = get_register_pair(B, C);
         set_flag_h_16_add(HL, BC);
         set_flag_c_16_add(HL, BC);
         set_flag_n(0);
@@ -142,7 +193,16 @@ private:
         cycles += 2;
     }
 
-    // 0x10 unfinished
+    // 0x0F
+    void RRCA() {
+        uint8_t bit0 = A & 0x01;
+        A = (A >> 1) | (bit0 << 7);
+        clear_flags();
+        if (bit0) F |= FLAG_C;
+        cycles++;
+    }
+
+    // 0x10 UNFINISHED
     void STOP() {
         // oof
         cycles++;
@@ -168,8 +228,77 @@ private:
         cycles += 2;
     }
 
+    // 0x14
+    void INC_D() {
+        INC_reg(D);
+        cycles++;
+    }
 
+    // 0x15
+    void DEC_D() {
+        DEC_reg(D);
+        cycles++;
+    }
 
+    // 0x16
+    void LD_D_d8() {
+        D = get_byte();
+        cycles += 2;
+    }
+
+    // 0x17 UNFINISHED
+    void RLA() {
+
+    }
+
+    // 0x18
+    void JR_s8() {
+        PC += static_cast<int8_t>(get_byte());
+        cycles += 3;
+    }
+
+    // 0x19
+    void ADD_HL_DE() {
+        uint16_t HL = get_register_pair(H, L);
+        uint16_t DE = get_register_pair(D, E);
+        set_flag_h_16_add(HL, DE);
+        set_flag_c_16_add(HL, DE);
+        set_flag_n(0);
+        HL += DE;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x1A
+    void LD_A_DE() {
+        uint16_t DE = get_register_pair(D, E);
+        A = (*memory)[DE];
+        cycles += 2;
+    }
+
+    // 0x1B
+    void DEC_DE() {
+        DEC_reg_pair(D, E);
+        cycles += 2;
+    }
+
+    // 0x1C
+    void INC_E() {
+        INC_reg(E);
+        cycles++;
+    }
+
+    // 0x1D
+    void DEC_E() {
+        DEC_reg(E);
+        cycles++;
+    }
+
+    // 0x1E
+    void LD_E_d8() {
+        E = get_byte();
+        cycles += 2;
+    }
 
     void select_op(uint8_t byte) {
         switch(byte) {
@@ -188,10 +317,22 @@ private:
             case 0x0C: INC_C();     break;
             case 0x0D: DEC_C();     break;
             case 0x0E: LD_C_d8();   break;
-            case 0x10: STOP();      break;
+            case 0x0F: RRCA();      break;
+            case 0x10: STOP();      break; // UNFINISHED
             case 0x11: LD_DE_d16(); break;
             case 0x12: LD_DE_A();   break;
             case 0x13: INC_DE();    break;
+            case 0x14: INC_D();     break;
+            case 0x15: DEC_D();     break;
+            case 0x16: LD_D_d8();   break;
+            case 0x17: RLA();       break; // UNFINISHED
+            case 0x18: JR_s8();     break;
+            case 0x19: ADD_HL_DE(); break;
+            case 0x1A: LD_A_DE();   break;
+            case 0x1B: DEC_DE();    break;
+            case 0x1C: INC_E();     break;
+            case 0x1D: DEC_E();     break;
+            case 0x1E: LD_E_d8();   break;
         }
     }
 
@@ -260,15 +401,15 @@ private:
             F &= ~FLAG_H;
     }
 
-    void set_flag_h_8_sub(uint8_t reg, uint8_t addition) {
-        if ((reg & LOW4) < (addition & LOW4))
+    void set_flag_h_8_sub(uint8_t reg, uint8_t subtraction) {
+        if ((reg & LOW4) < (subtraction & LOW4))
             F |= FLAG_H;
         else
             F &= ~FLAG_H;
     }
 
-    void set_flag_h_16_add(uint16_t reg, uint16_t subtraction) {
-        if (((reg & LOW12) + (subtraction & LOW12)) > LOW12)
+    void set_flag_h_16_add(uint16_t reg, uint16_t addition) {
+        if (((reg & LOW12) + (addition & LOW12)) > LOW12)
             F |= FLAG_H;
         else
             F &= ~FLAG_H;
@@ -329,17 +470,18 @@ private:
     }
 
     uint16_t get_2_bytes() {
-        uint8_t low, high;
-        low = cart[PC++];
-        high = cart[PC++];
+        uint8_t byte_lo, byte_hi;
+        byte_lo = cart[PC++];
+        byte_hi = cart[PC++];
 
-        return static_cast<uint16_t>(low) | (static_cast<uint16_t>(high) << 8);
+        return static_cast<uint16_t>(byte_lo) | (static_cast<uint16_t>(byte_hi) << 8);
     }
 
     void load_game() {
         std::ifstream rom(filename, std::ios::binary);
         if (!rom.is_open())
-        return;
+            // return custom exception    
+            return;
         
         cart.reserve(32768);
         char byte;
@@ -358,9 +500,10 @@ private:
         uint16_t DE = get_register_pair(D, E);
         uint16_t HL = get_register_pair(H, L);
 
-        std::cout << std::hex << std::uppercase; // Hex formatting, uppercase A-F
+        std::cout << std::hex << std::uppercase;
         std::cout << "╔═════════════════╗\n";
         std::cout << "║ Curr.Byte: 0x" << std::setw(2) << std::setfill('0') << +cart[PC] << " ║\n";
+        std::cout << "║ Cycles: " << cycles << " ║\n";
         std::cout << "╚═════════════════╝\n";
         std::cout << "╔════════╦════════╗\n";
         std::cout << "║ Reg    ║ Value  ║\n";
@@ -388,7 +531,7 @@ private:
     }
 
 public:
-    CPU(Memory* _memory) : memory(_memory) {}
+    CPU(Memory *_memory) : memory(_memory) {}
 
     void play_game() {
         filename = "Tetris_(USA)_(Rev-A).gb";
@@ -401,60 +544,9 @@ public:
     }
 };
 
-class Memory {
-public:
-    uint16_t address_space = 0xFFFF;
-    uint8_t ROM_bank_00[0x4000];
-    uint8_t ROM_bank_01_NN[0x4000];
-    uint8_t VRAM[0x2000];
-    uint8_t ERAM[0x2000];
-    uint8_t WRAM_1[0x1000];
-    uint8_t WRAM_2[0x1000];
-    uint8_t echo_RAM[0x1E00];
-    uint8_t OAM[0xA0];
-    uint8_t not_usable[0x5F];
-    uint8_t IO[0x80];
-    uint8_t HRAM[0x7F];
-    uint8_t interrupt;
-
-    uint8_t &operator[] (uint16_t address) {
-        if (address < 0x4000) {
-            return ROM_bank_00[address];
-        } else if (address < 0x8000) {
-            return ROM_bank_01_NN[address - 0x4000];
-        } else if (address < 0xA000) {
-            return VRAM[address - 0x8000];
-        } else if (address < 0xC000) {
-            return ERAM[address - 0xA000];
-        } else if (address < 0xD000) {
-            return WRAM_1[address - 0xC000];            
-        } else if (address < 0xE000) {
-            return WRAM_2[address - 0xD000];
-        } else if (address < 0xFE00) {
-            return echo_RAM[address - 0xE000];
-        } else if (address < 0xFEA0) {
-            return OAM[address - 0xFE00];
-        } else if (address < 0xFF00) {
-            return not_usable[address - 0xFEA0];
-        } else if (address < 0xFF80) {
-            return IO[address - 0xFF00];
-        } else if (address < 0xFFFF) {
-            return HRAM[address - 0xFF80];
-        } else if (address == 0xFFFF) {
-            return interrupt;
-        } 
-        // return exception
-        return interrupt;
-    }
-};
 
 int main() {
-    // cpu.play_game();
-    Memory *mem;
-    CPU cpu(mem);
-
-    (*mem)[0x02] = 5;
-
-    std::cout << static_cast<int>((*mem)[0x02]) << '\n';
-
+    Memory mem;
+    CPU cpu(&mem);
+    cpu.play_game();
 }
