@@ -136,7 +136,7 @@ private:
         uint8_t bit7 = (A >> 7) & 0x01;
         A = ((A << 1) | bit7) & 0xFF;
         clear_flags();
-        if (bit7) F |= FLAG_C;
+        if (bit7) set_flag_c(1);
         cycles++;
     }
 
@@ -198,7 +198,7 @@ private:
         uint8_t bit0 = A & 0x01;
         A = (A >> 1) | (bit0 << 7);
         clear_flags();
-        if (bit0) F |= FLAG_C;
+        if (bit0) set_flag_c(1);
         cycles++;
     }
 
@@ -252,7 +252,7 @@ private:
         uint8_t bit_c = (F & FLAG_C) >> 4;
         clear_flags();
         A = (A << 1) | bit_c;
-        if (bit7) F |= FLAG_C;
+        if (bit7) set_flag_c(1);
         cycles++;
     }
 
@@ -310,17 +310,17 @@ private:
         uint8_t bit0 = A & 0x01;
         A = (A >> 1) | ((F & FLAG_C) << 3);
         clear_flags();
-        if (bit0) F |= FLAG_C;
+        if (bit0) set_flag_c(1);
         cycles++;
     }
 
     // 0x20
     void JR_NZ_s8() {
-        int8_t byte = static_cast<int8_t>(get_byte());
+        int8_t offset = static_cast<int8_t>(get_byte());
         if (F & FLAG_Z) {
             cycles += 2;
         } else {
-            PC += byte;
+            PC += offset;
             cycles += 3;
         }
     }
@@ -366,32 +366,223 @@ private:
 
     // 0x27
     void DAA() {
-        uint8_t correction = 0;
         bool setC = false;
 
         if (!(F & FLAG_N)) {
             if ((A > 0x99) || (F & FLAG_C)) {
-                correction |= 0x60;
+                A += 0x60;
                 setC = true;
             }
             if ((A & 0x0F) > 0x09 || (F & FLAG_H)) {
-                correction |= 0x06;
+                A += 0x06;
             }
-            A += correction;
         } else {
-            if (F & FLAG_C) correction |= 0x60;
-            if (F & FLAG_H) correction |= 0x06;
-            A -= correction;
+            if (F & FLAG_C) A -= 0x60;
+            if (F & FLAG_H) A -= 0x06;
         }
 
         set_flag_z(A);
         set_flag_h(0);
-        if (setC) F |= FLAG_C;
-        else if (!(F & FLAG_N)) F &= ~FLAG_C;
+        if (setC)               set_flag_c(1);
+        else if (!(F & FLAG_N)) set_flag_c(0);
 
         cycles++;
     }
 
+    // 0x28
+    void JR_Z_s8() {
+        int8_t offset = static_cast<int8_t>(get_byte());
+        if (F & FLAG_Z) {
+            PC += offset;
+            cycles += 3;
+        } else {
+            cycles += 2;
+        }
+    }
+
+    // 0x29
+    void ADD_HL_HL() {
+        uint16_t HL = get_register_pair(H, L);
+        set_flag_c_16_add(HL, HL);
+        set_flag_h_16_add(HL, HL);
+        set_flag_n(0);
+        HL += HL;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x2A
+    void LD_A_HL_plus() {
+        uint16_t HL = get_register_pair(H, L);
+        A = (*memory)[HL];
+        HL++;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x2B
+    void DEC_HL() {
+        DEC_reg_pair(H, L);
+        cycles += 2;
+    }
+
+    // 0x2C
+    void INC_L() {
+        INC_reg(L);
+        cycles++;
+    }
+
+    // 0x2D
+    void DEC_L() {
+        DEC_reg(L);
+        cycles++;
+    }
+
+    // 0x2E
+    void LD_L_d8() {
+        L = get_byte();
+        cycles += 2;
+    }
+
+    // 0x2F
+    void CPL() {
+        A = ~A;
+        set_flag_n(1);
+        set_flag_h(1);
+        cycles++;
+    }
+
+    // 0x30
+    void JR_NC_s8() {
+        int8_t offset = static_cast<int8_t>(get_byte());
+        if (F & FLAG_C) {
+            PC += offset;
+            cycles += 3;
+        }
+        else {
+            cycles += 2;
+        } 
+    }
+
+    // 0x31
+    void LD_SP_d16() {
+        SP = get_2_bytes();
+        cycles += 3;
+    }
+
+    // 0x32
+    void LD_HL_minus_A() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL--] = A;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x33
+    void INC_SP() {
+        SP++;
+        cycles += 2;
+    }
+
+    // 0x34
+    void INC_HL() {
+        uint16_t HL = get_register_pair(H, L);
+        set_flag_h_8_add((*memory)[HL], 1);        
+        (*memory)[HL]++;
+        set_flag_z((*memory)[HL]);
+        set_flag_n(0);
+        cycles += 3;
+    }
+
+    // 0x35
+    void DEC_HL() {
+        uint16_t HL = get_register_pair(H, L);
+        set_flag_h_8_add((*memory)[HL], 1);        
+        (*memory)[HL]--;
+        set_flag_z((*memory)[HL]);
+        set_flag_n(0);
+        cycles += 3;
+    }
+
+    // 0x36
+    void LD_HL_d8() {
+        uint16_t HL = get_register_pair(H, L);
+        uint8_t data = get_byte();
+        (*memory)[HL] = data;
+        cycles += 3;
+    }
+
+    // 0x37
+    void SCF() {
+        set_flag_n(0);
+        set_flag_h(0);
+        set_flag_c(1);
+        cycles++;
+    }
+
+    // 0x38
+    void JR_C_s8() {
+        int8_t offset = static_cast<int8_t>(get_byte());
+        if (F & FLAG_C) {
+            PC += offset;
+            cycles += 3;
+        } else {
+            cycles += 2;
+        }
+    }
+
+    // 0x39
+    void ADD_HL_SP() {
+        uint16_t HL = get_register_pair(H, L);
+        set_flag_c_16_add(HL, SP);
+        set_flag_h_16_add(HL, SP);
+        set_flag_n(0);
+        HL += SP;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x3A
+    void LD_A_HL_minus() {
+        uint16_t HL = get_register_pair(H, L);
+        A = (*memory)[HL--];
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x3B
+    void DEC_SP() {
+        SP--;
+        cycles += 2;
+    }
+
+    // 0x3C
+    void INC_A() {
+        INC_reg(A);
+        cycles++;
+    }
+
+    // 0x3D
+    void DEC_A() {
+        DEC_reg(A);
+        cycles++;
+    }
+
+    // 0x3E
+    void LD_A_d8() {
+        A = get_byte();
+        cycles += 2;
+    }
+
+    // 0x3F
+    void CCF() {
+        set_flag_n(0);
+        set_flag_h(0);
+        set_flag_c(!(F & FLAG_C));
+        cycles++;
+    }
+
+    
 
     void select_op(uint8_t byte) {
         switch(byte) {
@@ -507,9 +698,6 @@ private:
         else
             F &= ~FLAG_C;
     }
-
-
-
     
     // H FLAG - USE BEFORE EDIT IS MADE
 
