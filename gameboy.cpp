@@ -246,9 +246,14 @@ private:
         cycles += 2;
     }
 
-    // 0x17 UNFINISHED
+    // 0x17
     void RLA() {
-
+        uint8_t bit7 = A >> 7;
+        uint8_t bit_c = (F & FLAG_C) >> 4;
+        clear_flags();
+        A = (A << 1) | bit_c;
+        if (bit7) F |= FLAG_C;
+        cycles++;
     }
 
     // 0x18
@@ -300,39 +305,136 @@ private:
         cycles += 2;
     }
 
+    // 0x1F
+    void RRA() {
+        uint8_t bit0 = A & 0x01;
+        A = (A >> 1) | ((F & FLAG_C) << 3);
+        clear_flags();
+        if (bit0) F |= FLAG_C;
+        cycles++;
+    }
+
+    // 0x20
+    void JR_NZ_s8() {
+        int8_t byte = static_cast<int8_t>(get_byte());
+        if (F & FLAG_Z) {
+            cycles += 2;
+        } else {
+            PC += byte;
+            cycles += 3;
+        }
+    }
+
+    // 0x21
+    void LD_HL_d16() {
+        L = get_byte();
+        H = get_byte();
+        cycles += 3;
+    }
+
+    // 0x22
+    void LD_HL_plus_A() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL++] = A;
+        store_register_pair(HL, H, L);
+        cycles += 2;
+    }
+
+    // 0x23
+    void INC_HL() {
+        INC_reg_pair(H, L);
+        cycles += 2;
+    }
+
+    // 0x24
+    void INC_H() {
+        INC_reg(H);
+        cycles++;
+    }
+
+    // 0x25
+    void DEC_H() {
+        DEC_reg(H);
+        cycles++;
+    }
+
+    // 0x26
+    void LD_H_d8() {
+        H = get_byte();
+        cycles += 2;
+    }
+
+    // 0x27
+    void DAA() {
+        uint8_t correction = 0;
+        bool setC = false;
+
+        if (!(F & FLAG_N)) {
+            if ((A > 0x99) || (F & FLAG_C)) {
+                correction |= 0x60;
+                setC = true;
+            }
+            if ((A & 0x0F) > 0x09 || (F & FLAG_H)) {
+                correction |= 0x06;
+            }
+            A += correction;
+        } else {
+            if (F & FLAG_C) correction |= 0x60;
+            if (F & FLAG_H) correction |= 0x06;
+            A -= correction;
+        }
+
+        set_flag_z(A);
+        set_flag_h(0);
+        if (setC) F |= FLAG_C;
+        else if (!(F & FLAG_N)) F &= ~FLAG_C;
+
+        cycles++;
+    }
+
+
     void select_op(uint8_t byte) {
         switch(byte) {
-            case 0x00: NOP();       break;
-            case 0x01: LD_BC_d16(); break;
-            case 0x02: LD_BC_A();   break;
-            case 0x03: INC_BC();    break;
-            case 0x04: INC_B();     break;
-            case 0x05: DEC_B();     break;
-            case 0x06: LD_B_d8();   break;
-            case 0x07: RLCA();      break;
-            case 0x08: LD_a16_SP(); break;
-            case 0x09: ADD_HL_BC(); break;
-            case 0x0A: LD_A_BC();   break;
-            case 0x0B: DEC_BC();    break;
-            case 0x0C: INC_C();     break;
-            case 0x0D: DEC_C();     break;
-            case 0x0E: LD_C_d8();   break;
-            case 0x0F: RRCA();      break;
-            case 0x10: STOP();      break; // UNFINISHED
-            case 0x11: LD_DE_d16(); break;
-            case 0x12: LD_DE_A();   break;
-            case 0x13: INC_DE();    break;
-            case 0x14: INC_D();     break;
-            case 0x15: DEC_D();     break;
-            case 0x16: LD_D_d8();   break;
-            case 0x17: RLA();       break; // UNFINISHED
-            case 0x18: JR_s8();     break;
-            case 0x19: ADD_HL_DE(); break;
-            case 0x1A: LD_A_DE();   break;
-            case 0x1B: DEC_DE();    break;
-            case 0x1C: INC_E();     break;
-            case 0x1D: DEC_E();     break;
-            case 0x1E: LD_E_d8();   break;
+            case 0x00: NOP();           break;
+            case 0x01: LD_BC_d16();     break;
+            case 0x02: LD_BC_A();       break;
+            case 0x03: INC_BC();        break;
+            case 0x04: INC_B();         break;
+            case 0x05: DEC_B();         break;
+            case 0x06: LD_B_d8();       break;
+            case 0x07: RLCA();          break;
+            case 0x08: LD_a16_SP();     break;
+            case 0x09: ADD_HL_BC();     break;
+            case 0x0A: LD_A_BC();       break;
+            case 0x0B: DEC_BC();        break;
+            case 0x0C: INC_C();         break;
+            case 0x0D: DEC_C();         break;
+            case 0x0E: LD_C_d8();       break;
+            case 0x0F: RRCA();          break;
+            case 0x10: STOP();          break; // UNFINISHED
+            case 0x11: LD_DE_d16();     break;
+            case 0x12: LD_DE_A();       break;
+            case 0x13: INC_DE();        break;
+            case 0x14: INC_D();         break;
+            case 0x15: DEC_D();         break;
+            case 0x16: LD_D_d8();       break;
+            case 0x17: RLA();           break;
+            case 0x18: JR_s8();         break;
+            case 0x19: ADD_HL_DE();     break;
+            case 0x1A: LD_A_DE();       break;
+            case 0x1B: DEC_DE();        break;
+            case 0x1C: INC_E();         break;
+            case 0x1D: DEC_E();         break;
+            case 0x1E: LD_E_d8();       break;
+            case 0x1F: RRA();           break;
+            case 0x20: JR_NZ_s8();      break;
+            case 0x21: LD_HL_d16();     break;
+            case 0x22: LD_HL_plus_A();  break;
+            case 0x23: INC_HL();        break;
+            case 0x24: INC_H();         break;
+            case 0x25: DEC_H();         break;
+            case 0x26: LD_H_d8();       break;
+            case 0x27: DAA();           break;
         }
     }
 
@@ -391,6 +493,23 @@ private:
         else
             F &= ~FLAG_N;
     }
+
+    void set_flag_h(char bit) {
+        if (bit)
+            F |= FLAG_H;
+        else
+            F &= ~FLAG_H;
+    }
+
+    void set_flag_c(char bit) {
+        if (bit)
+            F |= FLAG_C;
+        else
+            F &= ~FLAG_C;
+    }
+
+
+
     
     // H FLAG - USE BEFORE EDIT IS MADE
 
@@ -501,10 +620,10 @@ private:
         uint16_t HL = get_register_pair(H, L);
 
         std::cout << std::hex << std::uppercase;
-        std::cout << "╔═════════════════╗\n";
-        std::cout << "║ Curr.Byte: 0x" << std::setw(2) << std::setfill('0') << +cart[PC] << " ║\n";
-        std::cout << "║ Cycles: " << cycles << " ║\n";
-        std::cout << "╚═════════════════╝\n";
+        std::cout << "╔══════════════════\n";
+        std::cout << "║ Curr.Byte: 0x" << std::setw(2) << std::setfill('0') << +cart[PC] << "\n";
+        std::cout << "║ Cycles: " << cycles << "\n";
+        std::cout << "╚═════════════════. ..\n";
         std::cout << "╔════════╦════════╗\n";
         std::cout << "║ Reg    ║ Value  ║\n";
         std::cout << "╠════════╬════════╣\n";
@@ -536,10 +655,11 @@ public:
     void play_game() {
         filename = "Tetris_(USA)_(Rev-A).gb";
         load_game();
+
         while(1) {
-            uint8_t byte = cart[PC++];
-            select_op(byte);
             print_registers();
+            uint8_t opcode = cart[PC];
+            select_op(opcode);
         }
     }
 };
