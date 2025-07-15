@@ -101,7 +101,7 @@ private:
     }
 
     // 0x02
-    void LD_BC_A() {
+    void LD_BC_mem_A() {
         uint16_t BC = get_register_pair(B, C);       
         (*memory)[BC] = A;
         cycles += 2;
@@ -141,7 +141,7 @@ private:
     }
 
     // 0x08
-    void LD_a16_SP() {
+    void LD_a16_mem_SP() {
         uint8_t byte_lo = SP;
         uint8_t byte_hi = SP >> 8;
         uint16_t address = get_2_bytes();
@@ -163,7 +163,7 @@ private:
     }
 
     // 0x0A
-    void LD_A_BC() {
+    void LD_A_BC_mem() {
         uint16_t BC = get_register_pair(B, C);
         A = (*memory)[BC];
         cycles += 2;
@@ -216,7 +216,7 @@ private:
     }
 
     // 0x12
-    void LD_DE_A() {
+    void LD_DE_mem_A() {
         int16_t DE = get_register_pair(D, E);
         (*memory)[DE] = A;
         cycles += 2;
@@ -275,7 +275,7 @@ private:
     }
 
     // 0x1A
-    void LD_A_DE() {
+    void LD_A_DE_mem() {
         uint16_t DE = get_register_pair(D, E);
         A = (*memory)[DE];
         cycles += 2;
@@ -333,7 +333,7 @@ private:
     }
 
     // 0x22
-    void LD_HL_plus_A() {
+    void LD_HL_mem_plus_A() {
         uint16_t HL = get_register_pair(H, L);
         (*memory)[HL++] = A;
         store_register_pair(HL, H, L);
@@ -412,7 +412,7 @@ private:
     }
 
     // 0x2A
-    void LD_A_HL_plus() {
+    void LD_A_HL_mem_plus() {
         uint16_t HL = get_register_pair(H, L);
         A = (*memory)[HL];
         HL++;
@@ -471,7 +471,7 @@ private:
     }
 
     // 0x32
-    void LD_HL_minus_A() {
+    void LD_HL_mem_minus_A() {
         uint16_t HL = get_register_pair(H, L);
         (*memory)[HL--] = A;
         store_register_pair(HL, H, L);
@@ -485,7 +485,7 @@ private:
     }
 
     // 0x34
-    void INC_HL() {
+    void INC_HL_mem() {
         uint16_t HL = get_register_pair(H, L);
         set_flag_h_8_add((*memory)[HL], 1);        
         (*memory)[HL]++;
@@ -495,7 +495,7 @@ private:
     }
 
     // 0x35
-    void DEC_HL() {
+    void DEC_HL_mem() {
         uint16_t HL = get_register_pair(H, L);
         set_flag_h_8_add((*memory)[HL], 1);        
         (*memory)[HL]--;
@@ -505,7 +505,7 @@ private:
     }
 
     // 0x36
-    void LD_HL_d8() {
+    void LD_HL_mem_d8() {
         uint16_t HL = get_register_pair(H, L);
         uint8_t data = get_byte();
         (*memory)[HL] = data;
@@ -543,7 +543,7 @@ private:
     }
 
     // 0x3A
-    void LD_A_HL_minus() {
+    void LD_A_HL_mem_minus() {
         uint16_t HL = get_register_pair(H, L);
         A = (*memory)[HL--];
         store_register_pair(HL, H, L);
@@ -582,21 +582,515 @@ private:
         cycles++;
     }
 
-    
+    // 0x40
+    void LD_B_B() {
+        B = B;
+        cycles++;
+    }
+
+    // 0x41
+    void LD_B_C() {
+        B = C;
+        cycles++;
+    }
+
+    // 0x42
+    void LD_B_D() {
+        B = D;
+        cycles++;
+    }
+
+    // 0x43
+    void LD_B_E() {
+        B = E;
+        cycles++;
+    }
+
+    // 0x44
+    void LD_B_H() {
+        B = H;
+        cycles++;
+    }
+
+    // 0x45
+    void LD_B_L() {
+        B = L;
+        cycles++;
+    }
+
+    // 0x46
+    void LD_B_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        B = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x47
+    void LD_B_A() {
+        B = A;
+        cycles++;
+    }
+
+    // 0x48
+    void LD_C_B() {
+        C = B;
+        cycles++;
+    }
+
+    // 0x49
+    void LD_C_C() {
+        C = C;
+        cycles++;
+    }
+
+    // 0x4A
+    void LD_C_D() {
+        C = D;
+        cycles++;
+    }
+
+    // 0x4B
+    void LD_C_E() {
+        C = E;
+        cycles++;
+    }
+
+    // 0x4C
+    void LD_C_H() {
+        C = H;
+        cycles++;
+    }
+
+    // 0x4D
+    void LD_C_L() {
+        C = L;
+        cycles++;
+    }
+
+    // 0x4E
+    void LD_C_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        C = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x4F
+    void LD_C_A() {
+        C = A;
+        cycles++;
+    }
+
+    // 0x50
+    void LD_D_B() {
+        D = B;
+        cycles++;
+    }
+
+    // 0x51
+    void LD_D_C() {
+        D = C;
+        cycles++;
+    }
+
+    // 0x52
+    void LD_D_D() {
+        D = D;
+        cycles++;
+    }
+
+    // 0x53
+    void LD_D_E() {
+        D = E;
+        cycles++;
+    }
+
+    // 0x54
+    void LD_D_H() {
+        D = H;
+        cycles++;
+    }
+
+    // 0x55
+    void LD_D_L() {
+        D = L;
+        cycles++;
+    }
+
+    // 0x56
+    void LD_D_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        D = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x57
+    void LD_D_A() {
+        D = A;
+        cycles++;
+    }
+
+    // 0x58
+    void LD_E_B() {
+        E = B;
+        cycles++;
+    }
+
+    // 0x59
+    void LD_E_C() {
+        E = C;
+        cycles++;
+    }
+
+    // 0x5A
+    void LD_E_D() {
+        E = D;
+        cycles++;
+    }
+
+    // 0x5B
+    void LD_E_E() {
+        E = E;
+        cycles++;
+    }
+
+    // 0x5C
+    void LD_E_H() {
+        E = H;
+        cycles++;
+    }
+
+    // 0x5D
+    void LD_E_L() {
+        E = L;
+        cycles++;
+    }
+
+    // 0x5E
+    void LD_E_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        E = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x5F
+    void LD_E_A() {
+        E = A;
+        cycles++;
+    }
+
+    // 0x60
+    void LD_H_B() {
+        H = B;
+        cycles++;
+    }
+
+    // 0x61
+    void LD_H_C() {
+        H = C;
+        cycles++;
+    }
+
+    // 0x62
+    void LD_H_D() {
+        H = D;
+        cycles++;
+    }
+
+    // 0x63
+    void LD_H_E() {
+        H = E;
+        cycles++;
+    }
+
+    // 0x64
+    void LD_H_H() {
+        H = H;
+        cycles++;
+    }
+
+    // 0x65
+    void LD_H_L() {
+        H = L;
+        cycles++;
+    }
+
+    // 0x66
+    void LD_H_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        H = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x67
+    void LD_H_A() {
+        H = A;
+        cycles++;
+    }
+
+    // 0x68
+    void LD_L_B() {
+        L = B;
+        cycles++;
+    }
+
+    // 0x69
+    void LD_L_C() {
+        L = C;
+        cycles++;
+    }
+
+    // 0x6A
+    void LD_L_D() {
+        L = D;
+        cycles++;
+    }
+
+    // 0x6B
+    void LD_L_E() {
+        L = E;
+        cycles++;
+    }
+
+    // 0x6C
+    void LD_L_H() {
+        L = H;
+        cycles++;
+    }
+
+    // 0x6D
+    void LD_L_L() {
+        L = L;
+        cycles++;
+    }
+
+    // 0x6E
+    void LD_L_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        L = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x6F
+    void LD_L_A() {
+        L = A;
+        cycles++;
+    }
+
+    // 0x70
+    void LD_HL_mem_B() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = B;
+        cycles += 2;
+    }
+
+    // 0x71
+    void LD_HL_mem_C() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = C;
+        cycles += 2;
+    }
+
+    // 0x72
+    void LD_HL_mem_D() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = D;
+        cycles += 2;
+    }
+
+    // 0x73
+    void LD_HL_mem_E() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = E;
+        cycles += 2;
+    }
+
+    // 0x74
+    void LD_HL_mem_H() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = H;
+        cycles += 2;
+    }
+
+    // 0x75
+    void LD_HL_mem_L() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = L;
+        cycles += 2;
+    }
+
+    // 0x76 UNFINISHED
+    void HALT() {
+
+        cycles++;
+    }
+
+    // 0x77
+    void LD_HL_mem_A() {
+        uint16_t HL = get_register_pair(H, L);
+        (*memory)[HL] = A;
+        cycles += 2;
+    }
+
+    // 0x78
+    void LD_A_B() {
+        A = B;
+        cycles++;
+    }
+
+    // 0x79
+    void LD_A_C() {
+        A = C;
+        cycles++;
+    }
+
+    // 0x7A
+    void LD_A_D() {
+        A = D;
+        cycles++;
+    }
+
+    // 0x7B
+    void LD_A_E() {
+        A = E;
+        cycles++;
+    }
+
+    // 0x7C
+    void LD_A_H() {
+        A = H;
+        cycles++;
+    }
+
+    // 0x7D
+    void LD_A_L() {
+        A = L;
+        cycles++;
+    }
+
+    // 0x7E
+    void LD_A_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        A = (*memory)[HL];
+        cycles += 2;
+    }
+
+    // 0x7F
+    void LD_A_A() {
+        A = A;
+        cycles++;
+    }
+
+    // 0x80
+    void ADD_A_B() {
+        ADD(A, B);
+        cycles++;
+    }
+
+    // 0x81
+    void ADD_A_C() {
+        ADD(A, C);
+        cycles++;
+    }
+
+    // 0x82
+    void ADD_A_D() {
+        ADD(A, D);
+        cycles++;
+    }
+
+    // 0x83
+    void ADD_A_E() {
+        ADD(A, E);
+        cycles++;
+    }
+
+    // 0x84
+    void ADD_A_H() {
+        ADD(A, H);
+        cycles++;
+    }
+
+    // 0x85
+    void ADD_A_L() {
+        ADD(A, L);
+        cycles++;
+    }
+
+    // 0x86
+    void ADD_A_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        ADD(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0x87
+    void ADD_A_A() {
+        ADD(A, A);
+        cycles++;
+    }
+
+    // 0x88
+    void ADC_A_B() {
+        ADC(A, B);
+        cycles++;
+    }
+
+    // 0x89
+    void ADC_A_C() {
+        ADC(A, C);
+        cycles++;
+    }
+
+    // 0x8A
+    void ADC_A_D() {
+        ADC(A, D);
+        cycles++;
+    }
+
+    // 0x8B
+    void ADC_A_E() {
+        ADC(A, E);
+        cycles++;
+    }
+
+    // 0x8C
+    void ADC_A_H() {
+        ADC(A, H);
+        cycles++;
+    }
+
+    // 0x8D
+    void ADC_A_L() {
+        ADC(A, L);
+        cycles++;
+    }
+
+    // 0x8E
+    void ADC_A_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        ADC(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0x8F
+    void ADC_A_A() {
+        ADC(A, A);
+        cycles++;
+    }
 
     void select_op(uint8_t byte) {
         switch(byte) {
             case 0x00: NOP();           break;
             case 0x01: LD_BC_d16();     break;
-            case 0x02: LD_BC_A();       break;
+            case 0x02: LD_BC_mem_A();       break;
             case 0x03: INC_BC();        break;
             case 0x04: INC_B();         break;
             case 0x05: DEC_B();         break;
             case 0x06: LD_B_d8();       break;
             case 0x07: RLCA();          break;
-            case 0x08: LD_a16_SP();     break;
+            case 0x08: LD_a16_mem_SP();     break;
             case 0x09: ADD_HL_BC();     break;
-            case 0x0A: LD_A_BC();       break;
+            case 0x0A: LD_A_BC_mem();       break;
             case 0x0B: DEC_BC();        break;
             case 0x0C: INC_C();         break;
             case 0x0D: DEC_C();         break;
@@ -604,7 +1098,7 @@ private:
             case 0x0F: RRCA();          break;
             case 0x10: STOP();          break; // UNFINISHED
             case 0x11: LD_DE_d16();     break;
-            case 0x12: LD_DE_A();       break;
+            case 0x12: LD_DE_mem_A();       break;
             case 0x13: INC_DE();        break;
             case 0x14: INC_D();         break;
             case 0x15: DEC_D();         break;
@@ -612,7 +1106,7 @@ private:
             case 0x17: RLA();           break;
             case 0x18: JR_s8();         break;
             case 0x19: ADD_HL_DE();     break;
-            case 0x1A: LD_A_DE();       break;
+            case 0x1A: LD_A_DE_mem();       break;
             case 0x1B: DEC_DE();        break;
             case 0x1C: INC_E();         break;
             case 0x1D: DEC_E();         break;
@@ -620,7 +1114,7 @@ private:
             case 0x1F: RRA();           break;
             case 0x20: JR_NZ_s8();      break;
             case 0x21: LD_HL_d16();     break;
-            case 0x22: LD_HL_plus_A();  break;
+            case 0x22: LD_HL_mem_plus_A();  break;
             case 0x23: INC_HL();        break;
             case 0x24: INC_H();         break;
             case 0x25: DEC_H();         break;
@@ -661,6 +1155,29 @@ private:
         uint16_t reg_pair = get_register_pair(reg_hi, reg_lo);
         reg_pair--;
         store_register_pair(reg_pair, reg_hi, reg_lo);
+    }
+
+    void ADD(uint8_t &reg, uint8_t val) {
+        uint8_t result = reg + val;
+        set_flag_z(result);
+        set_flag_n(0);
+        set_flag_h_8_add(reg, val);
+        set_flag_c_8_add(reg, val);
+        reg = result;
+    }
+
+    void ADC(uint8_t &reg, uint8_t val) {
+        if (F & FLAG_C) ADD(reg, val + 1);
+        else            ADD(reg, val);
+    }
+
+    void SUB(uint8_t &reg, uint8_t val) {
+        uint8_t result = reg - val;
+        set_flag_z(result);
+        set_flag_n(1);
+        set_flag_h_8_sub(reg, val);
+        set_flag_c_8_sub(reg, val);
+        reg = result;
     }
 
     // -------------
