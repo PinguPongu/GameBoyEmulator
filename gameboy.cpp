@@ -920,7 +920,6 @@ private:
 
     // 0x76 UNFINISHED
     void HALT() {
-
         cycles++;
     }
 
@@ -1078,19 +1077,313 @@ private:
         cycles++;
     }
 
+    // 0x90
+    void SUB_B() {
+        SUB(A, B);
+        cycles++;
+    }
+
+    // 0x91
+    void SUB_C() {
+        SUB(A, C);
+        cycles++;
+    }
+
+    // 0x92
+    void SUB_D() {
+        SUB(A, D);
+        cycles++;
+    }
+
+    // 0x93
+    void SUB_E() {
+        SUB(A, E);
+        cycles++;
+    }
+
+    // 0x94
+    void SUB_H() {
+        SUB(A, H);
+        cycles++;
+    }
+
+    // 0x95
+    void SUB_L() {
+        SUB(A, L);
+        cycles++;
+    }
+
+    // 0x96
+    void SUB_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        SUB(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0x97
+    void SUB_A() {
+        SUB(A, A);
+        cycles++;
+    }
+
+    // 0x98
+    void SBC_A_B() {
+        SBC(A, B);
+        cycles++;
+    }
+
+    // 0x99
+    void SBC_A_C() {
+        SBC(A, C);
+        cycles++;
+    }
+
+    // 0x9A
+    void SBC_A_D() {
+        SBC(A, D);
+        cycles++;
+    }
+
+    // 0x9B
+    void SBC_A_E() {
+        SBC(A, E);
+        cycles++;
+    }
+
+    // 0x9C
+    void SBC_A_H() {
+        SBC(A, H);
+        cycles++;
+    }
+
+    // 0x9D
+    void SBC_A_L() {
+        SBC(A, L);
+        cycles++;
+    }
+
+    // 0x9E
+    void SBC_A_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        SBC(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0x9F
+    void SBC_A_A() {
+        SBC(A, A);
+        cycles++;
+    }
+
+    // 0xA0
+    void AND_B() {
+        AND(A, B);
+        cycles++;
+    }
+
+    // 0xA1
+    void AND_C() {
+        AND(A, C);
+        cycles++;
+    }
+
+    // 0xA2
+    void AND_D() {
+        AND(A, D);
+        cycles++;
+    }
+
+    // 0xA3
+    void AND_E() {
+        AND(A, E);
+        cycles++;
+    }
+
+    // 0xA4
+    void AND_H() {
+        AND(A, H);
+        cycles++;
+    }
+
+    // 0xA5
+    void AND_L() {
+        AND(A, L);
+        cycles++;
+    }
+
+    // 0xA6
+    void AND_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        AND(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0xA7
+    void AND_A() {
+        AND(A, A);
+        cycles++;
+    }
+
+    // 0xA8
+    void XOR_B() {
+        XOR(A, B);
+        cycles++;
+    }
+
+    // 0xA9
+    void XOR_C() {
+        XOR(A, C);
+        cycles++;
+    }
+
+    // 0xAA
+    void XOR_D() {
+        XOR(A, D);
+        cycles++;
+    }
+
+    // 0xAB
+    void XOR_E() {
+        XOR(A, E);
+        cycles++;
+    }
+
+    // 0xAC
+    void XOR_H() {
+        XOR(A, H);
+        cycles++;
+    }
+
+    // 0xAD
+    void XOR_L() {
+        XOR(A, L);
+        cycles++;
+    }
+
+    // 0xAE
+    void XOR_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        XOR(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0xAF
+    void XOR_A() {
+        XOR(A, A);
+        cycles++;
+    }
+
+    // 0xB0
+    void OR_B() {
+        OR(A, B);
+        cycles++;
+    }
+
+    // 0xB1
+    void OR_C() {
+        OR(A, C);
+        cycles++;
+    }
+
+    // 0xB2
+    void OR_D() {
+        OR(A, D);
+        cycles++;
+    }
+
+    // 0xB3
+    void OR_E() {
+        OR(A, E);
+        cycles++;
+    }
+
+    // 0xB4
+    void OR_H() {
+        OR(A, H);
+        cycles++;
+    }
+
+    // 0xB5
+    void OR_L() {
+        OR(A, L);
+        cycles++;
+    }
+
+    // 0xB6
+    void AND_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        OR(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0xB7
+    void OR_A() {
+        OR(A, A);
+        cycles++;
+    }
+
+    // 0xB8
+    void CP_B() {
+        CP(A, B);
+        cycles++;
+    }
+
+    // 0xB9
+    void CP_C() {
+        CP(A, C);
+        cycles++;
+    }
+
+    // 0xBA
+    void CP_D() {
+        CP(A, D);
+        cycles++;
+    }
+
+    // 0xBB
+    void CP_E() {
+        CP(A, E);
+        cycles++;
+    }
+
+    // 0xBC
+    void CP_H() {
+        CP(A, H);
+        cycles++;
+    }
+
+    // 0xBD
+    void CP_L() {
+        CP(A, L);
+        cycles++;
+    }
+
+    // 0xBE
+    void CP_HL_mem() {
+        uint16_t HL = get_register_pair(H, L);
+        CP(A, (*memory)[HL]);
+        cycles += 2;
+    }
+
+    // 0xBF
+    void CP_A() {
+        CP(A, A);
+        cycles++;
+    }
+
     void select_op(uint8_t byte) {
         switch(byte) {
             case 0x00: NOP();           break;
             case 0x01: LD_BC_d16();     break;
-            case 0x02: LD_BC_mem_A();       break;
+            case 0x02: LD_BC_mem_A();   break;
             case 0x03: INC_BC();        break;
             case 0x04: INC_B();         break;
             case 0x05: DEC_B();         break;
             case 0x06: LD_B_d8();       break;
             case 0x07: RLCA();          break;
-            case 0x08: LD_a16_mem_SP();     break;
+            case 0x08: LD_a16_mem_SP(); break;
             case 0x09: ADD_HL_BC();     break;
-            case 0x0A: LD_A_BC_mem();       break;
+            case 0x0A: LD_A_BC_mem();   break;
             case 0x0B: DEC_BC();        break;
             case 0x0C: INC_C();         break;
             case 0x0D: DEC_C();         break;
@@ -1098,7 +1391,7 @@ private:
             case 0x0F: RRCA();          break;
             case 0x10: STOP();          break; // UNFINISHED
             case 0x11: LD_DE_d16();     break;
-            case 0x12: LD_DE_mem_A();       break;
+            case 0x12: LD_DE_mem_A();   break;
             case 0x13: INC_DE();        break;
             case 0x14: INC_D();         break;
             case 0x15: DEC_D();         break;
@@ -1106,7 +1399,7 @@ private:
             case 0x17: RLA();           break;
             case 0x18: JR_s8();         break;
             case 0x19: ADD_HL_DE();     break;
-            case 0x1A: LD_A_DE_mem();       break;
+            case 0x1A: LD_A_DE_mem();   break;
             case 0x1B: DEC_DE();        break;
             case 0x1C: INC_E();         break;
             case 0x1D: DEC_E();         break;
@@ -1178,6 +1471,43 @@ private:
         set_flag_h_8_sub(reg, val);
         set_flag_c_8_sub(reg, val);
         reg = result;
+    }
+
+    void SBC(uint8_t &reg, uint8_t val) {
+        if (F & FLAG_C) SUB(reg, val + 1);
+        else            SUB(reg, val);
+    }
+
+    void AND(uint8_t &reg_1, uint8_t reg_2) {
+        reg_1 &= reg_2;
+        set_flag_z(reg_1);
+        set_flag_n(0);
+        set_flag_h(1);
+        set_flag_c(0);
+    }
+
+    void XOR(uint8_t &reg_1, uint8_t reg_2) {
+        reg_1 ^= reg_2;
+        set_flag_z(reg_1);
+        set_flag_n(0);
+        set_flag_h(0);
+        set_flag_c(0);
+    }
+
+    void OR(uint8_t &reg_1, uint8_t reg_2) {
+        reg_1 |= reg_2;
+        set_flag_z(reg_1);
+        set_flag_n(0);
+        set_flag_h(0);
+        set_flag_c(0);
+    }
+
+    void CP(uint8_t reg_1, uint8_t reg_2) {
+        uint8_t result = reg_1 - reg_2;
+        set_flag_z(result);
+        set_flag_n(1);
+        set_flag_h_8_sub(reg_1, reg_2);
+        set_flag_c_8_sub(reg_1, reg_2);
     }
 
     // -------------
