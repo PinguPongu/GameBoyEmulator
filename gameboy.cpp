@@ -1308,7 +1308,7 @@ private:
     }
 
     // 0xB6
-    void AND_HL_mem() {
+    void OR_HL_mem() {
         uint16_t HL = get_register_pair(H, L);
         OR(A, (*memory)[HL]);
         cycles += 2;
@@ -1372,9 +1372,9 @@ private:
     // 0xC0
     void RET_NZ() {
         if (!(F & FLAG_Z)) {
-            uint8_t lo_byte = (*memory)[SP++];
-            uint8_t hi_byte = (*memory)[SP++];
-            PC = get_register_pair(hi_byte, lo_byte);
+            uint8_t byte_hi, byte_lo;
+            POP(byte_hi, byte_lo);
+            PC = get_register_pair(byte_hi, byte_lo);
             cycles += 5;
         } else {
             cycles += 2;
@@ -1386,6 +1386,165 @@ private:
         POP(B, C);
         cycles += 3;
     }
+
+    // 0xC2
+    void JP_NZ_a16() {
+        uint16_t address = get_2_bytes();
+        if (!(F & FLAG_Z)) {
+            PC = address;
+            cycles += 4;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xC3
+    void JP_a16() {
+        PC = get_2_bytes();
+        cycles += 4;
+    }
+
+    // 0xC4
+    void CALL_NZ_a16() {
+        uint16_t address = get_2_bytes();
+        if (!(F & FLAG_Z)) {
+            uint8_t PC_hi = PC >> 8;
+            uint8_t PC_lo = PC;
+            PUSH(PC_hi, PC_lo);
+            PC = address;
+            cycles += 6;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xC5
+    void PUSH_BC() {
+        PUSH(B, C);
+        cycles += 4;
+    }
+
+    // 0xC6
+    void ADD_A_d8() {
+        uint8_t d8 = get_byte();
+        ADD(A, d8);
+        cycles += 2;
+    }
+
+    // 0xC7
+    void RST_0() {
+        RST(0x0000);
+        cycles += 4;
+    }
+
+    // 0xC8
+    void RET_Z() {
+        if (F & FLAG_Z) {
+            uint8_t byte_hi, byte_lo;
+            POP(byte_hi, byte_lo);
+            PC = get_register_pair(byte_hi, byte_lo);
+            cycles += 5;
+        } else {
+            cycles += 2;
+        }
+    }
+
+    // 0xC9
+    void RET() {
+        uint8_t P, C;
+        POP(P, C);
+        PC = get_register_pair(P, C);
+        cycles += 4;
+    }
+
+    // 0xCA
+    void JP_Z_a16() {
+        uint16_t address = get_2_bytes();
+        if (F & FLAG_Z) {
+            PC = address;
+            cycles += 4;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xCC
+    void CALL_Z_a16() {
+        uint16_t address = get_2_bytes();
+        if (F & FLAG_Z) {
+            uint8_t PC_hi = PC >> 8;
+            uint8_t PC_lo = PC;
+            PUSH(PC_hi, PC_lo);
+            PC = address;
+            cycles += 6;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xCE
+    void ADC_A_d8() {
+        uint8_t d8 = get_byte();
+        ADC(A, d8);
+        cycles += 2;
+    }
+
+    // 0xCF
+    void RST_1() {
+        RST(0x0008);
+        cycles += 4;
+    }
+
+    // 0xD0
+    void RET_NC() {
+        if (!(F & FLAG_C)) {
+            uint8_t byte_hi, byte_lo;
+            POP(byte_hi, byte_lo);
+            PC = get_register_pair(byte_hi, byte_lo);
+            cycles += 5;
+        } else {
+            cycles += 2;
+        }
+    }
+
+    // 0xD1
+    void POP_DE() {
+        POP(D, E);
+        cycles += 3;
+    }
+
+    // 0xD2
+    void JP_NC_a16() {
+        uint16_t address = get_2_bytes();
+        if (!(F & FLAG_N)) {
+            PC = address;
+            cycles += 4;
+        } else {
+            cycles += 3;
+        }
+    }
+    
+    // 0xD4
+    void CALL_NC_a16() {
+        uint16_t address = get_2_bytes();
+        if (!(F & FLAG_C)) {
+            uint8_t PC_hi = PC >> 8;
+            uint8_t PC_lo = PC;
+            PUSH(PC_hi, PC_lo);
+            PC = address;
+            cycles += 6;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xD5
+    void PUSH_DE() {
+        PUSH(D, E);
+        cycles += 4;
+    }
+
+
 
 
     void select_op(uint8_t byte) {
@@ -1532,6 +1691,18 @@ private:
         reg_1 = (*memory)[SP++];
     }
 
+    void PUSH(uint8_t &reg_1, uint8_t &reg_2) {
+        (*memory)[--SP] = reg_2;
+        (*memory)[--SP] = reg_1;
+    }
+
+    void RST(uint16_t val) {
+        uint8_t P = PC >> 8;
+        uint8_t C = PC;
+        PUSH(P, C);
+        PC = val;
+    }
+
     // -------------
     // F FLAGS UTILS
     // -------------
@@ -1642,13 +1813,13 @@ private:
     }
 
     uint8_t get_byte() {
-        return cart[PC];
+        return cart[PC++];
     }
 
     uint16_t get_2_bytes() {
         uint8_t byte_lo, byte_hi;
         byte_lo = cart[PC++];
-        byte_hi = cart[PC];
+        byte_hi = cart[PC++];
 
         return static_cast<uint16_t>(byte_lo) | (static_cast<uint16_t>(byte_hi) << 8);
     }
