@@ -76,6 +76,8 @@ private:
     uint16_t SP = 0xFFFE; // Stack Pointer
     uint16_t PC = 0x0100; // Program Counter
 
+    bool IME = false;
+
     std::string filename;
     std::vector<uint8_t> cart;
 
@@ -1544,8 +1546,129 @@ private:
         cycles += 4;
     }
 
+    // 0xD6
+    void SUB_d8() {
+        uint8_t d8 = get_byte();
+        SUB(A, d8);
+        cycles += 2;
+    }
 
+    // 0xD7
+    void RST_2() {
+        RST(0x0010);
+        cycles += 4;
+    }
 
+    // 0xD8
+    void RET_C() {
+        if (F & FLAG_C) {
+            uint8_t byte_hi, byte_lo;
+            POP(byte_hi, byte_lo);
+            PC = get_register_pair(byte_hi, byte_lo);
+            cycles += 5;
+        } else {
+            cycles += 2;
+        }
+    }
+
+    // 0xD9
+    void RETI() {
+        uint8_t P, C;
+        POP(P, C);
+        PC = get_register_pair(P, C);
+        IME = true;
+        cycles += 4;
+    }
+
+    // 0xDA
+    void JP_C_a16() {
+        uint16_t address = get_2_bytes();
+        if (F & FLAG_C) {
+            PC = address;
+            cycles += 4;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xDC
+    void CALL_C_a16() {
+        uint16_t address = get_2_bytes();
+        if (F & FLAG_C) {
+            uint8_t PC_hi = PC >> 8;
+            uint8_t PC_lo = PC;
+            PUSH(PC_hi, PC_lo);
+            PC = address;
+            cycles += 6;
+        } else {
+            cycles += 3;
+        }
+    }
+
+    // 0xDE
+    void SBC() {
+        uint8_t d8 = get_byte();
+        SBC(A, d8);
+        cycles += 2;
+    }
+
+    // 0xDF
+    void RST_3() {
+        RST(0X0018);
+        cycles += 4;
+    }
+
+    // 0xE0
+    void LD_a8_mem_A() {
+        uint8_t a8 = get_byte();
+        uint16_t address = 0xFF00 | a8;
+        (*memory)[address] = A;
+        cycles += 3;
+    }
+
+    // 0xE1
+    void POP_HL() {
+        POP(H, L);
+        cycles += 3;
+    }
+
+    // 0xE2
+    void LD_C_mem_A() {
+        uint16_t address = 0xFF00 | C;
+        (*memory)[address] = A;
+        cycles += 2;
+    }
+
+    // 0xE5
+    void PUSH_HL() {
+        PUSH(H, L);
+        cycles += 4;
+    }
+
+    // 0xE6
+    void AND_d8() {
+        uint8_t d8 = get_byte();
+        AND(A, d8);
+        cycles += 2;
+    }
+
+    // 0xE7
+    void RST_4() {
+        RST(0x0020);
+        cycles += 4;
+    }
+
+    // 0xE8
+    void ADD_SP_s8() {
+        int8_t s8 = static_cast<int8_t>(get_byte());
+        uint16_t result = SP + s8;
+        set_flag_z(0);
+        set_flag_n(0);
+        set_flag_h_16_add(SP, s8);
+        set_flag_c_16_add(SP, s8);
+        SP = result;
+        cycles += 4;
+    }
 
     void select_op(uint8_t byte) {
         switch(byte) {
