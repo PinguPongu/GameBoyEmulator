@@ -1662,11 +1662,42 @@ private:
     void ADD_SP_s8() {
         int8_t s8 = static_cast<int8_t>(get_byte());
         uint16_t result = SP + s8;
+
         set_flag_z(0);
         set_flag_n(0);
-        set_flag_h_16_add(SP, s8);
-        set_flag_c_16_add(SP, s8);
+
+        uint16_t temp = SP ^ s8 ^ result;
+        set_flag_h((temp & 0x10) != 0);
+        set_flag_c((temp & 0x100) != 0);
+
         SP = result;
+        cycles += 4;
+    }
+
+    // 0xE9
+    void JP_HL() {
+        uint16_t HL = get_register_pair(H, L);
+        PC = HL;
+        cycles++;
+    }
+
+    // 0xEA
+    void LD_a16_mem_A() {
+        uint16_t a16 = get_2_bytes();
+        (*memory)[a16] = A;
+        cycles += 4;
+    }
+
+    // 0xEE
+    void XOR() {
+        uint8_t d8 = get_byte();
+        XOR(A, d8);
+        cycles += 2;
+    }
+
+    // 0xEF
+    void RST_5() {
+        RST(0x0028);
         cycles += 4;
     }
 
@@ -1865,61 +1896,37 @@ private:
     // H FLAG - USE BEFORE EDIT IS MADE
 
     void set_flag_h_8_add(uint8_t reg, uint8_t addition) {
-        if (((reg & LOW4) + (addition & LOW4)) > LOW4)
-            F |= FLAG_H;
-        else
-            F &= ~FLAG_H;
+        set_flag_h(((reg & LOW4) + (addition & LOW4)) > LOW4);
     }
 
     void set_flag_h_8_sub(uint8_t reg, uint8_t subtraction) {
-        if ((reg & LOW4) < (subtraction & LOW4))
-            F |= FLAG_H;
-        else
-            F &= ~FLAG_H;
+        set_flag_h((reg & LOW4) < (subtraction & LOW4));
     }
 
     void set_flag_h_16_add(uint16_t reg, uint16_t addition) {
-        if (((reg & LOW12) + (addition & LOW12)) > LOW12)
-            F |= FLAG_H;
-        else
-            F &= ~FLAG_H;
+        set_flag_h(((reg & LOW12) + (addition & LOW12)) > LOW12);
     }
 
     void set_flag_h_16_sub(uint16_t reg, uint16_t subtraction) {
-        if ((reg & LOW12) < (subtraction & LOW12))
-            F |= FLAG_H;
-        else
-            F &= ~FLAG_H;
+        set_flag_h((reg & LOW12) < (subtraction & LOW12));
     }
 
     // C FLAG - USE BEFORE EDIT IS MADE
 
     void set_flag_c_8_add(uint8_t reg, uint8_t addition) {
-        if ((reg > (reg + addition)))
-            F |= FLAG_C;
-        else
-            F &= ~FLAG_C;
+        set_flag_c((reg > (reg + addition)));
     }
 
     void set_flag_c_8_sub(uint8_t reg, uint8_t subtraction) {
-        if ((reg < (reg - subtraction)))
-            F |= FLAG_C;
-        else
-            F &= ~FLAG_C;
+        set_flag_c((reg < (reg - subtraction)));
     }
 
     void set_flag_c_16_add(uint16_t reg, uint16_t addition) {
-        if ((reg > (reg + addition)))
-            F |= FLAG_C;
-        else
-            F &= ~FLAG_C;
+        set_flag_c((reg > (reg + addition)));
     }
 
     void set_flag_c_16_sub(uint16_t reg, uint16_t subtraction) {
-        if ((reg < (reg - subtraction)))
-            F |= FLAG_C;
-        else
-            F &= ~FLAG_C;
+        set_flag_c((reg < (reg - subtraction)));
     }
 
     // ------------------------------------
@@ -2009,7 +2016,7 @@ public:
 
         while(1) {
             print_registers();
-            uint8_t opcode = cart[PC++];
+            uint8_t opcode = get_byte();
             select_op(opcode);
         }
     }
